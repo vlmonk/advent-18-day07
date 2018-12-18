@@ -2,11 +2,15 @@ use regex::Regex;
 
 #[derive(Debug, PartialEq)]
 pub struct InputRecord {
-    first: char,
-    next: char,
+    pub first: char,
+    pub next: char,
 }
 
 impl InputRecord {
+    pub fn new(first: char, next: char) -> Self {
+        Self { first, next }
+    }
+
     pub fn parse(src: &str) -> Self {
         lazy_static! {
             static ref RE: Regex =

@@ -3,8 +3,10 @@ extern crate lazy_static;
 extern crate regex;
 
 mod input_record;
+mod solver;
 
 use crate::input_record::InputRecord;
+use crate::solver::Solver;
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -19,4 +21,8 @@ fn main() {
         .lines()
         .map(|line| InputRecord::parse(line))
         .collect();
+
+    let solver = Solver::new(input);
+    let result = solver.result();
+    println!("Task 1: {}", result);
 }
