@@ -15,9 +15,10 @@ impl InputRecord {
         lazy_static! {
             static ref RE: Regex =
                 Regex::new(r"^Step (\w) must be finished before step (\w) can begin.$").unwrap();
+            static ref RE_SHORT: Regex = Regex::new(r"^(\w)->(\w)").unwrap();
         }
 
-        let cap = RE.captures(src).unwrap();
+        let cap = RE.captures(src).or(RE_SHORT.captures(src)).unwrap();
         let first = cap[1].parse::<char>().unwrap();
         let next = cap[2].parse::<char>().unwrap();
 
@@ -37,6 +38,18 @@ mod test {
             InputRecord {
                 first: 'C',
                 next: 'A'
+            }
+        );
+    }
+
+    #[test]
+    fn parse_short() {
+        let record = InputRecord::parse("X->Y");
+        assert_eq!(
+            record,
+            InputRecord {
+                first: 'X',
+                next: 'Y'
             }
         );
     }
