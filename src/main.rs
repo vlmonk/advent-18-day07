@@ -4,6 +4,7 @@ mod tick_solver;
 
 use crate::input_record::InputRecord;
 use crate::solver::Solver;
+use crate::tick_solver::TickSolver;
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -19,7 +20,13 @@ fn main() {
         .map(|line| InputRecord::parse(line))
         .collect();
 
+    let input2 = input.clone();
+
     let solver = Solver::new(input);
     let result = solver.result();
     println!("Task 1: {}", result);
+
+    let mut solver2 = TickSolver::new(input2, 5, 60);
+    let result = solver2.result();
+    println!("Task 2: {}", result);
 }

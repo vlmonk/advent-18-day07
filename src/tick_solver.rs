@@ -30,7 +30,7 @@ impl Part {
     }
 
     pub fn ready_start(&self) -> bool {
-        self.deps.len() == 0
+        self.deps.len() == 0 && !self.active
     }
 
     pub fn ready_stop(&self) -> bool {
@@ -40,6 +40,8 @@ impl Part {
 
 pub struct TickSolver {
     parts: HashMap<char, Part>,
+    max_workers: i32,
+    current_workers: i32,
 }
 
 impl TickSolver {
@@ -69,7 +71,11 @@ impl TickSolver {
             part.deps.insert(i.first);
         }
 
-        Self { parts }
+        Self {
+            parts,
+            max_workers: workers,
+            current_workers: 0,
+        }
     }
 
     fn remove(&mut self, letter: char) {
@@ -83,8 +89,6 @@ impl TickSolver {
     pub fn result(&mut self) -> i32 {
         let mut current = 0;
         loop {
-            println!("Tick {}: {:?}", current, self.parts);
-
             let to_remove: Vec<char> = self
                 .parts
                 .values()
@@ -94,18 +98,34 @@ impl TickSolver {
 
             for letter in to_remove {
                 self.remove(letter);
+                self.current_workers -= 1;
             }
 
             if self.parts.len() == 0 {
                 break;
             }
 
-            for part in self.parts.values_mut().filter(|part| part.active()) {
-                part.tick();
+            let max_jobs_add = (self.max_workers - self.current_workers) as usize;
+
+            let ready_to_start: Vec<char> = self
+                .parts
+                .values()
+                .filter(|part| part.ready_start())
+                .map(|part| part.letter)
+                .collect();
+
+            for part in self
+                .parts
+                .values_mut()
+                .filter(|part| part.ready_start())
+                .take(max_jobs_add)
+            {
+                part.start();
+                self.current_workers += 1;
             }
 
-            for part in self.parts.values_mut().filter(|part| part.ready_start()) {
-                part.start();
+            for part in self.parts.values_mut().filter(|part| part.active()) {
+                part.tick();
             }
 
             current += 1;
@@ -119,20 +139,36 @@ impl TickSolver {
 mod test {
     use super::*;
     #[test]
+    fn very_simple() {
+        let input = vec![InputRecord::parse("A->B")];
+        let mut solver = TickSolver::new(input, 11, 0);
+        let result = solver.result();
+
+        assert_eq!(result, 3);
+    }
+    #[test]
     fn simple() {
         let input = vec![InputRecord::parse("B->A"), InputRecord::parse("C->A")];
         let mut solver = TickSolver::new(input, 10, 0);
         let result = solver.result();
 
-        assert_eq!(result, 6);
+        assert_eq!(result, 4);
     }
     #[test]
     fn simple_with_add() {
         let input = vec![InputRecord::parse("B->A"), InputRecord::parse("C->A")];
-        let mut solver = TickSolver::new(input, 10, 100);
+        let mut solver = TickSolver::new(input, 10, 10);
         let result = solver.result();
 
-        assert_eq!(result, 204);
+        assert_eq!(result, 24);
+    }
+    #[test]
+    fn simple_with_worker_limit() {
+        let input = vec![InputRecord::parse("B->A"), InputRecord::parse("C->A")];
+        let mut solver = TickSolver::new(input, 1, 0);
+        let result = solver.result();
+
+        assert_eq!(result, 6);
     }
 
     #[test]
